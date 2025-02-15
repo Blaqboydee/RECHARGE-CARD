@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+
+    select,
+    input,
+    button {
+      margin: 10px;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .tables {
+      margin-top: 20px;
+      /* background-color: red; */
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 80%;
+      border-collapse: collapse;
+      margin: 20px auto;
+      background-color: white;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .tables th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .table2 th {
+      background-color: #074117e7;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #ddd;
+    }
+
+    #amount {
+      font-weight: bold;
+      color: #28a745;
+      font-size: 18px;
+    }
+  </style>
+  <body>
+    <select name="" id="Provider">
+      <option value="">Choose Provider</option>
+      <option value="MTN">MTN</option>
+      <option value="GLO">GLO</option>
+      <option value="9MOBILE">9MOBILE</option>
+      <option value="AIRTEL">AIRTEL</option>
+    </select>
+
+    <select name="" id="Amount">
+      <option value="">Choose Amount</option>
+      <option value="100">100</option>
+      <option value="200">200</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+    </select>
+
+    <button id="generateBtn" onclick="generatePin()">Generate Pin</button>
+    <p id="myPin"></p>
+
+    <input
+      type="text"
+      value="*311*pin#"
+      name=""
+      id="input"
+      placeholder="load card here"
+    />
+    <button id="loadButton" onclick="loadCard(Amount.value)">Load Card</button>
+    <br />
+
+    <button onclick="allvouchers(database)">All Vouchers</button>
+    <button onclick="usedVouchers(database)">Used Vouchers</button>
+    <button onclick="unusedVouchers(database)">Unused Vouchers</button> <br />
+    <span>Latest Recharge: </span><span id="amount"> 0.00</span>
+    <div class="tables">
+      <table>
+        <thead>
+          <tr>
+            <th>S/N</th>
+            <th>Provider</th>
+            <th>Amount</th>
+            <th>Pin</th>
+            <th>Is Used</th>
+          </tr>
+        </thead>
+
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="table2">
+      <table>
+        <thead>
+          <tr>
+            <th>MTN</th>
+            <th>GLO</th>
+            <th>AIRTEL</th>
+            <th>9MOBILE</th>
+          </tr>
+        </thead>
+
+        <tbody id="accounbalance"></tbody>
+      </table>
+    </div>
+  </body>
+</html>
+
+<script>
+  let database = JSON.parse(localStorage.getItem("RechargeCards")) || [];
+  displayTable();
+
+  let balances = JSON.parse(localStorage.getItem("TabledBalance")) || {
+    MTN: 0,
+    GLO: 0,
+    AIRTEL: 0,
+    "9MOBILE": 0,
+  };
+
+  displayBalance();
+
+  if (
+    JSON.parse(localStorage.getItem("NormalBalance")) == null ||
+    localStorage.getItem("Provider") == null
+  ) {
+    amount.innerHTML = `₦0.00`;
+  } else {
+    amount.innerHTML = ` Your ${localStorage.getItem(
+      "Provider"
+    )} balance is ₦${JSON.parse(localStorage.getItem("NormalBalance"))}.00`;
+  }
+
+  let rechargeCardInput = input;
+
+  function generatePin() {
+    if (!Provider.value) {
+      alert("Kindly select a network provider");
+    } else if (!Amount.value) {
+      alert("Kindly select an amount");
+    } else {
+      generateBtn.innerHTML = "Generating...";
+
+      setTimeout(() => {
+        let card = "";
+        for (let index = 0; index < 15; index++) {
+          let chooser = Math.floor(Math.random() * 10);
+          let recharge = chooser;
+          card += recharge;
+        }
+
+        myPin.innerHTML = card;
+
+        let cardDetails = {
+          Provider: Provider.value,
+          Amount: Amount.value,
+          Pin: card,
+          useState: false,
+        };
+        generateBtn.innerHTML = "Generate Pin";
+
+        database.push(cardDetails);
+        localStorage.setItem("RechargeCards", JSON.stringify(database));
+        displayTable();
+      }, 1500);
+    }
+  }
+
+  function loadCard(Balance) {
+    let rechargeCardInput = input.value;
+    let selectedProvider = Provider.value;
+
+    let sliceOut = rechargeCardInput.slice(5, 20);
+    // console.log(sliceOut);
+
+    let theCard = database.find((theObject) => theObject.Pin == sliceOut);
+
+    if (!rechargeCardInput.startsWith("*311*")) {
+      alert("Invalid format");
+    } else if (!rechargeCardInput.endsWith("#")) {
+      alert("Invalid format");
+    } else if (theCard) {
+      if (theCard.useState) {
+        alert("Card has already been used");
+      } else {
+        theCard.useState = true;
+        loadButton.innerHTML = "Loading...";
+        setTimeout(() => {
+          alert("Card is successfully loaded");
+          input.value = "*311*Pin#";
+          loadButton.innerHTML = "Load Card";
+          localStorage.setItem("RechargeCards", JSON.stringify(database));
+          displayTable();
+
+          balances[selectedProvider] += Number(Balance);
+          localStorage.setItem(
+            "NormalBalance",
+            JSON.stringify(balances[selectedProvider])
+          );
+          localStorage.setItem("Provider", Provider.value);
+          amount.innerHTML = `Your ${selectedProvider} account balance is  ₦${balances[selectedProvider]}.00`;
+          localStorage.setItem("TabledBalance", JSON.stringify(balances));
+          displayBalance();
+        }, 2000);
+      }
+    } else {
+      alert("Invalid pin");
+    }
+  }
+
+  function allvouchers(allCards) {
+    displayTable();
+  }
+
+  function usedVouchers(usedCards) {
+    let hasBeenUsed = usedCards.filter((usedCard) => usedCard.useState == true);
+    tableBody.innerHTML = "";
+    hasBeenUsed.forEach((usedCard, i) => {
+      tableBody.innerHTML += ` <tr>
+                    <td>${i + 1}</td>
+                    <td>${usedCard.Provider}</td>
+                    <td>${usedCard.Amount}</td>
+                    <td>${usedCard.Pin}</td>
+                    <td>${usedCard.useState}</td>
+                </tr>`;
+    });
+  }
+
+  function unusedVouchers(unusedCards) {
+    let hasNotBeenUsed = unusedCards.filter(
+      (unusedCard) => unusedCard.useState == false
+    );
+    tableBody.innerHTML = "";
+    hasNotBeenUsed.forEach((unUsedCard, i) => {
+      tableBody.innerHTML += ` <tr>
+                    <td>${i + 1}</td>
+                    <td>${unUsedCard.Provider}</td>
+                    <td>${unUsedCard.Amount}</td>
+                    <td>${unUsedCard.Pin}</td>
+                    <td>${unUsedCard.useState}</td>
+                </tr>`;
+    });
+  }
+
+  function displayBalance() {
+    accounbalance.innerHTML = ` <tr>
+                    <td>₦${balances.MTN}.00</td>
+                    <td>₦${balances.GLO}.00</td>
+                    <td>₦${balances.AIRTEL}.00</td>
+                    <td>₦${balances["9MOBILE"]}.00</td>
+                </tr>`;
+  }
+
+  function displayTable() {
+    tableBody.innerHTML = "";
+    database.forEach((eachcard, i) => {
+      tableBody.innerHTML += ` <tr>
+                    <td>${i + 1}</td>
+                    <td>${eachcard.Provider}</td>
+                    <td>${eachcard.Amount}</td>
+                    <td>${eachcard.Pin}</td>
+                    <td>${eachcard.useState}</td>
+                </tr>`;
+    });
+  }
+</script>
